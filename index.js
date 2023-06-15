@@ -24,10 +24,10 @@ bot.onText(/\/start/, (msg) => {
   });
 });
 bot.on('text',(msg) =>{
-  const chatId = msg.chat.id;
     switch(true){
       case msg.text === "Зареєструватися":
-        startRegister(chatId,1);
+        bot.sendMessage(msg.chat.id,"Введіть своє ім'я")
+        startRegister(1);
         break;
       case msg.text === "Увійти":
         bot.sendMessage(msg.chat.id,"Поки в розробці");
@@ -35,9 +35,13 @@ bot.on('text',(msg) =>{
     }
 });
 
-async function startRegister(msg,count){
+ function startRegister(count){
+  
+  bot.on('message',async (msg) => {
+    let chatId = msg.chat.id
+    let message = msg.text
     let registrationStaps = [];
-     if (count === 0) {
+     if (count === 4) {
       return;
      }
     switch (count) {
@@ -45,7 +49,6 @@ async function startRegister(msg,count){
         registrationStaps.name = message;
         bot.sendMessage(chatId, 'Дякую! Тепер введіть свій номер телефону:');
         break;
-
       case 2:
         registrationStaps.phone = message;
         bot.sendMessage(chatId, 'Дякую! Тепер придумайте пароль:');
@@ -61,7 +64,9 @@ async function startRegister(msg,count){
             bot.sendMessage(chatId, 'Ви успішно зареєстровані!');
           }
           delete registrationStaps[chatId];
-        });
-        break;
-      startRegister(chatId,count+1);
-}}
+        });       
+       break;
+    };
+    startRegister(count+1);
+  });
+}
