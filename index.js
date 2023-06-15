@@ -1,31 +1,67 @@
 import TelegramBot from "node-telegram-bot-api";
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import User from "./models/userModel.js"
 
-const token = '6294387182:AAHiGAbPts-nA00qJ9MngoHeYTQp2di4gJQ';
-const bot = new TelegramBot(token, {polling: true});
+
+dotenv.config();
+await mongoose
+  .connect(process.env.DB)
+  .then(() => console.log("DB coneccted"))
+  .catch((err) => console.log("DB error", err));
+const bot = new TelegramBot(process.env.TOKEN, {polling: true});
+
+bot.setMyCommands([
+  {command:"/start",description:"Розпочати роботу з ботом"}
+])
 
 bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id, "Давайте почнемо:",{
-    "reply_markup": {
-      "keyboard": [["Зареєструватися"], ["Авторизуватися"]]
+  console.log(msg);
+  bot.sendMessage(msg.chat.id, `Привіт ${msg.from.first_name}, давай розпочнемо:`,{
+    reply_markup: {
+      keyboard: [["Зареєструватися"],["Увійти"]],
       }
   });
 });
-bot.on('message', (msg) => {
-  const messageText = msg.text;
-  switch (true) {
-    case messageText === 'Зареєструватися':
-      bot.sendMessage(msg.chat.id, "Ви натиснули зареєструватися",{
-        "reply_markup": {
-          remove_keyboard:true
-          }
-      })
-      break;
-    case messageText === 'Авторизуватися':
-      bot.sendMessage(msg.chat.id, "Ви натиснули Авторизуватися",{
-        "reply_markup": {
-          remove_keyboard:true
-          }
-      })
-      break;
-  }
+bot.on('text',(msg) =>{
+  const chatId = msg.chat.id;
+    switch(true){
+      case msg.text === "Зареєструватися":
+        startRegister(chatId,1);
+        break;
+      case msg.text === "Увійти":
+        bot.sendMessage(msg.chat.id,"Поки в розробці");
+        break;
+    }
 });
+
+async function startRegister(msg,count){
+    let registrationStaps = [];
+     if (count === 0) {
+      return;
+     }
+    switch (count) {
+      case 1:
+        registrationStaps.name = message;
+        bot.sendMessage(chatId, 'Дякую! Тепер введіть свій номер телефону:');
+        break;
+
+      case 2:
+        registrationStaps.phone = message;
+        bot.sendMessage(chatId, 'Дякую! Тепер придумайте пароль:');
+        break;
+      case 3:
+        registrationStaps.password = message;
+        const { name, phone, password } = registrationStaps;
+        const user = new User({ name, phone, password });
+        await user.save((err) => {
+          if (err) {
+            bot.sendMessage(chatId, 'Під час реєстрації сталася помилка. Будь ласка, спробуйте знову.');
+          } else {
+            bot.sendMessage(chatId, 'Ви успішно зареєстровані!');
+          }
+          delete registrationStaps[chatId];
+        });
+        break;
+      startRegister(chatId,count+1);
+}}
