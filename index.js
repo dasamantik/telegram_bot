@@ -16,7 +16,6 @@ bot.setMyCommands([
 ])
 
 bot.onText(/\/start/, (msg) => {
-  console.log(msg);
   bot.sendMessage(msg.chat.id, `Привіт ${msg.from.first_name}, давай розпочнемо:`,{
     reply_markup: {
       keyboard: [["Зареєструватися"],["Увійти"]],
@@ -26,8 +25,9 @@ bot.onText(/\/start/, (msg) => {
 bot.on('text',(msg) =>{
     switch(true){
       case msg.text === "Зареєструватися":
+        const registerdata = {};
         bot.sendMessage(msg.chat.id,"Введіть своє ім'я")
-        startRegister(1);
+        startRegister(msg.chat.id, 1,registerdata);
         break;
       case msg.text === "Увійти":
         bot.sendMessage(msg.chat.id,"Поки в розробці");
@@ -35,38 +35,34 @@ bot.on('text',(msg) =>{
     }
 });
 
- function startRegister(count){
-  
-  bot.on('message',async (msg) => {
-    let chatId = msg.chat.id
-    let message = msg.text
-    let registrationStaps = [];
-     if (count === 4) {
-      return;
-     }
-    switch (count) {
-      case 1:
-        registrationStaps.name = message;
-        bot.sendMessage(chatId, 'Дякую! Тепер введіть свій номер телефону:');
-        break;
-      case 2:
-        registrationStaps.phone = message;
-        bot.sendMessage(chatId, 'Дякую! Тепер придумайте пароль:');
-        break;
-      case 3:
-        registrationStaps.password = message;
-        const { name, phone, password } = registrationStaps;
-        const user = new User({ name, phone, password });
-        await user.save((err) => {
-          if (err) {
-            bot.sendMessage(chatId, 'Під час реєстрації сталася помилка. Будь ласка, спробуйте знову.');
-          } else {
-            bot.sendMessage(chatId, 'Ви успішно зареєстровані!');
-          }
-          delete registrationStaps[chatId];
-        });       
-       break;
-    };
-    startRegister(count+1);
-  });
+function startRegister(chatId, count,registerdata) {
+  switch (count) {
+    case 1:
+      bot.on('message', async (msg) => {
+          registerdata.name = msg.text;
+          bot.sendMessage(chatId, 'Дякую! Тепер введіть свій номер телефону:');
+          bot.removeListener('message');
+          startRegister(chatId, count + 1,registerdata);
+      });
+      break;
+    case 2:
+      bot.on('message', async (msg) => {
+          registerdata.email = msg.text;
+          bot.sendMessage(chatId, 'Дякую! Тепер придумайте пароль:');
+          bot.removeListener('message');
+          startRegister(chatId, count + 1,registerdata);
+      });
+      break;
+    case 3:
+      bot.on('message', async (msg) => {
+          registerdata.password = msg.text;
+          console.log(registerdata);
+          const {name,email,password} = registerdata;
+          const user = new User({ name, email, password });
+          await user.save();
+          bot.sendMessage(chatId, 'Ви успішно зареєстровані!');
+          bot.removeListener('message');
+      });
+      break;
+  }
 }
